@@ -26,7 +26,25 @@ export interface ScreenshotResult {
 const captureImage = async (
   webContentsId: number
 ): Promise<Electron.NativeImage | undefined> => {
-  const Image = await webContents.fromId(webContentsId)?.capturePage();
+  const WebContents = webContents.fromId(webContentsId);
+
+  const isExecuted = await WebContents?.executeJavaScript(`
+    if (window.isExecuted) {
+      true;
+    }
+  `);
+
+  if (!isExecuted) {
+    await WebContents?.executeJavaScript(`
+      const bgColor = window.getComputedStyle(document.body).backgroundColor;
+      if (bgColor === 'rgba(0, 0, 0, 0)') {
+        document.body.style.backgroundColor = 'white';
+      } 
+      window.isExecuted = true;
+    `);
+  }
+
+  const Image = await WebContents?.capturePage();
   return Image;
 };
 
